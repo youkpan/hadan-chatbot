@@ -32,6 +32,7 @@ from chatbot.corpus.opensubsdata import OpensubsData
 from chatbot.corpus.scotusdata import ScotusData
 from chatbot.corpus.ubuntudata import UbuntuData
 from chatbot.corpus.lightweightdata import LightweightData
+from chatbot.corpus.noveldata import NovelData
 
 
 class Batch:
@@ -50,6 +51,7 @@ class TextData:
     """
 
     availableCorpus = collections.OrderedDict([  # OrderedDict because the first element is the default choice
+        ('novel', NovelData),
         ('cornell', CornellData),
         ('opensubs', OpensubsData),
         ('scotus', ScotusData),
