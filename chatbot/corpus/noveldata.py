@@ -59,7 +59,7 @@ class NovelData:
         with open(fileName, "rb") as f:
           #if(f.readline() == ""):
           print("geting data")
-          bookdata = f.read(190001).decode('GBK')
+          bookdata = f.read(190000000).decode('GBK')
           print("geting data  OK ")
           lineu = bookdata
 
@@ -89,7 +89,7 @@ class NovelData:
               position_t =  position
               #print("----------")
               sentence = ''
-              for k in range(position,position+30):
+              for k in range(position,position+60):
                 try:
                   #print( word_s,dict_index[word_s] )
                   sentence += word_s
@@ -98,8 +98,7 @@ class NovelData:
                   #word_v[dict_index[word_s]] = 1
                   #word_v[int(dict_index[word_s]%84)] = 1
                   #，。;！？”“
-                  if(word_s ==' ' or word_s =='　'):
-                    continue
+
                   if(word_s ==','  or word_s ==','
                     or word_s =='，'  or word_s =='“'):
                   #print(line_v)
