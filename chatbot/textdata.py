@@ -51,12 +51,12 @@ class TextData:
     """
 
     availableCorpus = collections.OrderedDict([  # OrderedDict because the first element is the default choice
-        ('novel', NovelData),
         ('cornell', CornellData),
         ('opensubs', OpensubsData),
         ('scotus', ScotusData),
         ('ubuntu', UbuntuData),
         ('lightweight', LightweightData),
+        ('novel', NovelData),
     ])
 
     @staticmethod

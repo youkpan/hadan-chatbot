@@ -35,7 +35,7 @@ class NovelData:
         """
         self.MAX_NUMBER_SUBDIR = 10
         self.conversations = []
-        __dir = os.path.join(dirName, "dialogs")
+        __dir = os.path.join(dirName, "Novel")
         number_subdir = 0
         for sub in tqdm(os.scandir(__dir), desc="Ubuntu dialogs subfolders", total=len(os.listdir(__dir))):
             if number_subdir == self.MAX_NUMBER_SUBDIR:
@@ -45,7 +45,6 @@ class NovelData:
             if sub.is_dir():
                 number_subdir += 1
                 for f in os.scandir(sub.path):
-                    if f.name.endswith(".tsv"):
                         self.conversations.append({"lines": self.loadLines(f.path)})
 
 
@@ -60,7 +59,7 @@ class NovelData:
         with open(fileName, "rb") as f:
           #if(f.readline() == ""):
           print("geting data")
-          bookdata = f.read(190000000).decode('UTF-8')
+          bookdata = f.read(190001).decode('GBK')
           print("geting data  OK ")
           lineu = bookdata
 
@@ -85,10 +84,10 @@ class NovelData:
 
               #lineu=line.decode('utf-8')
               line_vector = []
-              line_mark = np.ones(sentence_len)
+              #line_mark = np.ones(sentence_len)
               #print(line)
               position_t =  position
-              print("----------")
+              #print("----------")
               sentence = ''
               for k in range(position,position+30):
                 try:
@@ -121,7 +120,8 @@ class NovelData:
 
               if len(sentence)< 3 :
                 continue
-              print (sentence)
+              if(position %10000 == 1 ):
+               print (position,sentence)
               lines.append({"text": sentence})
 
         return lines
