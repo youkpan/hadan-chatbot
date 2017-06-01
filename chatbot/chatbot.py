@@ -119,7 +119,7 @@ class Chatbot:
 
         # Network options (Warning: if modifying something here, also make the change on save/loadParams() )
         nnArgs = parser.add_argument_group('Network options', 'architecture related option')
-        nnArgs.add_argument('--hiddenSize', type=int, default=512, help='number of hidden units in each RNN cell')
+        nnArgs.add_argument('--hiddenSize', type=int, default=1536, help='number of hidden units in each RNN cell')
         nnArgs.add_argument('--numLayers', type=int, default=2, help='number of rnn layers')
         nnArgs.add_argument('--softmaxSamples', type=int, default=0, help='Number of samples in the sampled softmax loss function. A value of 0 deactivates sampled softmax')
         nnArgs.add_argument('--initEmbeddings', action='store_true', help='if present, the program will initialize the embeddings with pre-trained word2vec vectors')
@@ -130,8 +130,8 @@ class Chatbot:
         trainingArgs = parser.add_argument_group('Training options')
         trainingArgs.add_argument('--numEpochs', type=int, default=30, help='maximum number of epochs to run')
         trainingArgs.add_argument('--saveEvery', type=int, default=2000, help='nb of mini-batch step before creating a model checkpoint')
-        trainingArgs.add_argument('--batchSize', type=int, default=128, help='mini-batch size')
-        trainingArgs.add_argument('--learningRate', type=float, default=0.0005, help='Learning rate')
+        trainingArgs.add_argument('--batchSize', type=int, default=256, help='mini-batch size')
+        trainingArgs.add_argument('--learningRate', type=float, default=0.002, help='Learning rate')
         trainingArgs.add_argument('--dropout', type=float, default=0.9, help='Dropout rate (keep probabilities)')
 
 
@@ -330,9 +330,9 @@ class Chatbot:
         while True:
             question = input(self.SENTENCES_PREFIX[0])
             if question == '' or question == 'exit':
-                break
+                continue
             questionc = jieba.cut(question, cut_all=False)
-            question = str(" ".join(questionc)).decoder("GBK")
+            question = " ".join(questionc) #str(" ".join(questionc)).encoder("GBK")
             print(question)
             questionSeq = []  # Will be contain the question as seen by the encoder
             answer = self.singlePredict(question, questionSeq)
@@ -497,6 +497,7 @@ class Chatbot:
 
         else:
             print('No previous model found, starting from clean directory: {}'.format(self.modelDir))
+
 
     def _saveSession(self, sess):
         """ Save the model parameters and the variables

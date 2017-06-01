@@ -293,7 +293,7 @@ class TextData:
                 'idCount': self.idCount,
                 'trainingSamples': self.trainingSamples
             }
-            pickle.dump(data, handle, -1)  # Using the highest protocol available
+            pickle.dump(data, handle, protocol=2)  # Using the highest protocol available
 
     def loadDataset(self, filename):
         """Load samples from file
@@ -308,7 +308,18 @@ class TextData:
             self.id2word = data['id2word']
             self.idCount = data.get('idCount', None)
             self.trainingSamples = data['trainingSamples']
-
+            '''
+            print("dumping "+dataset_path)
+            with open(dataset_path.join("test"), 'wb') as handle:
+                data = {  # Warning: If adding something here, also modifying loadDataset
+                    'word2id': self.word2id,
+                    'id2word': self.id2word,
+                    'idCount': self.idCount,
+                    'trainingSamples': self.trainingSamples
+                }
+                pickle.dump(data, handle, protocol=2)  # Using the highest protocol available
+            print("dump ok")
+            '''
             self.padToken = self.word2id['<pad>']
             self.goToken = self.word2id['<go>']
             self.eosToken = self.word2id['<eos>']
