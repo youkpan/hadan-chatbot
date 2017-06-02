@@ -1,4 +1,3 @@
-﻿#coding:utf-8
 # Copyright 2015 Conchylicultor. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -19,7 +18,7 @@ Loads the dialogue corpus, builds the vocabulary
 """
 
 import numpy as np
-#import nltk  # For tokenize
+import nltk  # For tokenize
 from tqdm import tqdm  # Progress bar
 import pickle  # Saving the data
 import math  # For float comparison
@@ -200,10 +199,10 @@ class TextData:
         batch.weights = weightsT
 
         # # Debug
-        #print('----------------------------------')
-        #self.printBatch(batch)  # Input inverted, padding should be correct
-        #print(self.sequence2str(samples[0][0]))
-        #print(self.sequence2str(samples[0][1]))  # Check we did not modified the original sample
+        print('----------------------------------')
+        self.printBatch(batch)  # Input inverted, padding should be correct
+        print(self.sequence2str(samples[0][0]))
+        print(self.sequence2str(samples[0][1]))  # Check we did not modified the original sample
 
         return batch
 
@@ -480,7 +479,7 @@ class TextData:
             list<list<int>>: the list of sentences of word ids of the sentence
         """
         sentences = []  # List[List[str]]
-        '''
+        
         # Extract sentences
         sentencesToken = nltk.sent_tokenize(line)
 
@@ -493,25 +492,17 @@ class TextData:
                 tempWords.append(self.getWordId(token))  # Create the vocabulary and the training sentences
 
             sentences.append(tempWords)
-        
+        print(sentences,sentencesToken)
         '''
         words = line.split(' ')
         #print('line',words)
-        tempWords = []
-        dou = u"，" #.encode('GBK')
-        feng = u"；"#.encode('GBK')
-        ju = u"。"#.encode('GBK') 
         for i in range(0,len(words)):
-            if words[i]==dou or words[i]==feng or words[i]==ju :
-                tempWords = []
-                sentences.append(tempWords)    
-                #print('new-----------------------------------')
-            
+            tempWords = []
             tempWords.append(self.getWordId(words[i]))  # Create the vocabulary and the training sentences
-        sentences.append(tempWords)    
+            sentences.append(tempWords)    
         #print(sentences)      
-        
-        #print('2',sentences,words)   
+        '''  
+        print(sentences)      
         return sentences
 
     def getWordId(self, word, create=True):
@@ -525,7 +516,7 @@ class TextData:
         """
         # Should we Keep only words with more than one occurrence ?
 
-        #word = word.lower()  # Ignore case
+        word = word.lower()  # Ignore case
 
         # At inference, we simply look up for the word
         if not create:
@@ -620,10 +611,10 @@ class TextData:
 
         if sentence == '':
             return None
-        '''
+        
         # First step: Divide the sentence in token
         tokens = nltk.word_tokenize(sentence)
-        
+        print(sentence,tokens) 
         if len(tokens) > self.args.maxLength:
             return None
 
@@ -642,7 +633,7 @@ class TextData:
         for token in tokens:
             wordIds.append(self.getWordId(token, create=False))  # Create the vocabulary and the training sentences
             
-        #print('1',sentence,tokens) 
+        '''
         # Third step: creating the batch (add padding, reverse)
         batch = self._createBatch([[wordIds, []]])  # Mono batch, no target output
 
