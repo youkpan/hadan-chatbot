@@ -1,3 +1,4 @@
+﻿#coding:utf-8
 # Copyright 2015 Conchylicultor. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -67,16 +68,28 @@ class NovelData:
         #for line in f.readlines():
         position = 0
         while(position+500 < text_words):
-          while(position +100 < text_words ):
-              position +=1
-
-              word_s = str(lineu[position])
-
-              if word_s =="“" :
+              while(position +100 < text_words ):
+                word_s = str(lineu[position])#.encode('utf-8')            
+                #print(word_s)
+                if( word_s =="：" or word_s ==":"  or word_s =="「"  or word_s=="“" ):
+                    break
                 position +=1
+                
+              position +=1
+              for k in range(position,position+ 8):
+              	word_s = str(lineu[k]) #.encode('utf-8')  
+              	#print('check',word_s) 
+              	if  word_s=="“" or  word_s=="　"  or  word_s==" " or word_s=="'" or  word_s=='"' or  word_s=="\r" or  word_s=="\n":
+                	position +=1
+                	#print('skip',word_s)
+              	else:
+                  break
+                	
               #else:
                 #position +=1
-
+              word_s = str(lineu[position])
+              #print(word_s)
+              position +=1
               #lineu=line.decode('utf-8')
               line_vector = []
               #line_mark = np.ones(sentence_len)
@@ -84,18 +97,15 @@ class NovelData:
               position_t =  position
               #print("----------")
               sentence = ''
-              for k in range(position,position+60):
+              for k in range(position,position+ 16*2):
                 try:
                   #print( word_s,dict_index[word_s] )
                   sentence += word_s
                   #word_v = dict_vector[dict_index[word_s]]
                   word_s = str(lineu[k])
-                  #word_v[dict_index[word_s]] = 1
-                  #word_v[int(dict_index[word_s]%84)] = 1
-                  #，。;！？”“
-                     #print (word_s) word_s =='：'  or
+
                   if((( word_s =='，') and (position_t-position >7)) or
-                    word_s =='。' or word_s ==';' or word_s =='！'or word_s =='？' or word_s =='”'
+                    word_s =='。' or word_s =='；' or word_s =='！' or word_s =='？' or word_s =='”' or word_s =='」'
                     or word_s =='.' or word_s ==';' or word_s =='!' or word_s =='?' or word_s =='"' ):
                       break
 
@@ -106,12 +116,13 @@ class NovelData:
 
               position = position_t
 
-              if len(sentence)< 3 :
+              if len(sentence)< 4 :
                 continue
-              if(position %10000 == 1 ):
-               print (position,sentence)
+              lline=len(lines)
+              if( lline%10000 <20 or lline >740000 ):
+                print (len(lines),sentence,len(sentence))
               lines.append({"text": sentence})
-
+        print('len lines',len(lines))
         return lines
 
 

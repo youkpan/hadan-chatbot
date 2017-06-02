@@ -453,7 +453,8 @@ class TextData:
             step = 2
         else:
             step = 1
-
+            
+        print("len(conversation['lines'])",len(conversation['lines']))
         # Iterate over all the lines of the conversation
         for i in tqdm_wrap(
             range(0, len(conversation['lines']) - 1, step),  # We ignore the last line (no answer for it)

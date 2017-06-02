@@ -40,21 +40,20 @@ class ProjectionOp:
         self.scope = scope
 
         # Projection on the keyboard
-        with tf.device('/gpu:0'):
-            with tf.variable_scope('weights_' + self.scope):
-                self.W_t = tf.get_variable(
-                    'weights',
-                    shape,
-                    # initializer=tf.truncated_normal_initializer()  # TODO: Tune value (fct of input size: 1/sqrt(input_dim))
-                    dtype=dtype
-                )
-                self.b = tf.get_variable(
-                    'bias',
-                    shape[0],
-                    initializer=tf.constant_initializer(),
-                    dtype=dtype
-                )
-                self.W = tf.transpose(self.W_t)
+        with tf.variable_scope('weights_' + self.scope):
+            self.W_t = tf.get_variable(
+                'weights',
+                shape,
+                # initializer=tf.truncated_normal_initializer()  # TODO: Tune value (fct of input size: 1/sqrt(input_dim))
+                dtype=dtype
+            )
+            self.b = tf.get_variable(
+                'bias',
+                shape[0],
+                initializer=tf.constant_initializer(),
+                dtype=dtype
+            )
+            self.W = tf.transpose(self.W_t)
 
     def getWeights(self):
         """ Convenience method for some tf arguments
