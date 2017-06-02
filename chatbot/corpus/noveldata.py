@@ -68,6 +68,7 @@ class NovelData:
         #for line in f.readlines():
         position = 0
         while(position+500 < text_words):
+              '''
               while(position +100 < text_words ):
                 word_s = str(lineu[position])#.encode('utf-8')            
                 #print(word_s)
@@ -75,12 +76,12 @@ class NovelData:
                     #print('new1----------------------------------',word_s)
                     break
                 position +=1
-                
+              ''' 
               position +=1
               for k in range(position,position+ 8):
               	word_s = str(lineu[k]) #.encode('utf-8')  
               	#print('check',word_s) 
-              	if  word_s==u"“" or  word_s==u"　"  or  word_s==u" " or word_s==u"'" or  word_s==u'"' or  word_s==u"\r" or  word_s==u"\n":
+              	if  word_s==u"“" or  word_s==u"”" or word_s==u"「"  or word_s==u"」"  or word_s==u"　"  or  word_s==" " or word_s==u"'" or  word_s==u'"' or  word_s==u"\r" or  word_s==u"\n":
                 	#print('new2----------------------------------',word_s)
                 	position +=1
                 	#print('skip',word_s)
