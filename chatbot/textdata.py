@@ -408,23 +408,44 @@ class TextData:
         # Last step: replace old ids by new ones and filters empty sentences
         def replace_words(words):
             valid = False  # Filter empty sequences
+            counter=0
+            dou = self.word2id[u'，']
+            ju2 = self.word2id[u'。']
+            kong = self.word2id[u'　']
+             
+            
             for i, w in enumerate(words):
                 words[i] = newMapping[w]
-                if words[i] != self.unknownToken:  # Also filter if only contains unknown tokens
-                    valid = True
+                if (words[i] != self.unknownToken )and (words[i] != dou)  and (words[i] != ju2 ) and (words[i] != kong)  :  # Also filter if only contains unknown tokens
+                    #valid = True
+                    counter +=1
+                    
+            if(counter >=2 ):
+                valid = True
+            '''
+                print(' valid!:')
+            else:
+                print(' Not valid!:')
+                
+            s=''
+            for i in range(0,len(words)):
+                s += self.id2word[words[i]]
+            print(s)
+            '''
             return valid
 
         self.trainingSamples.clear()
-
+        counter2 = 0
         for inputWords, targetWords in tqdm(newSamples, desc='Replace ids:', leave=False):
             valid = True
             valid &= replace_words(inputWords)
             valid &= replace_words(targetWords)
             valid &= targetWords.count(self.unknownToken) == 0  # Filter target with out-of-vocabulary target words ?
-
+            
             if valid:
                 self.trainingSamples.append([inputWords, targetWords])  # TODO: Could replace list by tuple
-
+                counter2 +=1
+        print('valid counter2 :',counter2)
         self.idCount.clear()  # Not usefull anymore. Free data
 
     def createFullCorpus(self, conversations):
