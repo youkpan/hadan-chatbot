@@ -246,6 +246,7 @@ class TextData:
     def loadCorpus(self):
         """Load/create the conversations data
         """
+        add_to_pkl = False
         datasetExist = os.path.isfile(self.filteredSamplesPath)
         if not datasetExist:  # First time we load the database: creating all files
             print('Training samples not found. Creating dataset...')
@@ -262,7 +263,14 @@ class TextData:
 
                 # Corpus creation
                 corpusData = TextData.availableCorpus[self.args.corpus](self.corpusDir + optional)
-                self.createFullCorpus(corpusData.getConversations())
+                if(os.path.isfile(self.filteredSamplesPath+'-default.pkl')):
+                    print ('get default.pkl----')
+                    self.loadDataset(self.filteredSamplesPath+'-default.pkl')
+                    self.trainingSamples2 = []
+                    self.createFullCorpus(corpusData.getConversations(),False)
+                    add_to_pkl = True
+                else:
+                    self.createFullCorpus(corpusData.getConversations(),True)
                 self.saveDataset(self.fullSamplesPath)
             else:
                 self.loadDataset(self.fullSamplesPath)
@@ -272,7 +280,10 @@ class TextData:
                 self.args.vocabularySize,
                 self.args.filterVocab
             ))
-            self.filterFromFull()  # Extract the sub vocabulary for the given maxLength and filterVocab
+            if(os.path.isfile(self.filteredSamplesPath+'-default.pkl')):
+                self.filterFromFull2()
+            else:
+                self.filterFromFull()  # Extract the sub vocabulary for the given maxLength and filterVocab
 
             # Saving
             print('Saving dataset...')
@@ -310,6 +321,8 @@ class TextData:
             self.id2word = data['id2word']
             self.idCount = data.get('idCount', None)
             self.trainingSamples = data['trainingSamples']
+            print('loadDataset : len(self.trainingSamples):',len(self.trainingSamples))
+            self.loadsamplelen = len(self.trainingSamples)
             '''
             print("dumping "+dataset_path)
             with open(dataset_path.join("test"), 'wb') as handle:
@@ -327,40 +340,170 @@ class TextData:
             self.eosToken = self.word2id['<eos>']
             self.unknownToken = self.word2id['<unknown>']  # Restore special words
 
+
+
+
+    def filterFromFull2(self):
+        """ Load the pre-processed full corpus and filter the vocabulary / sentences
+        to match the given model options
+        """
+        newSamples = []
+        self.idCount = []
+
+
+        def mergeSentences(sentences, fromEnd=False):
+	        """Merge the sentences until the max sentence length is reached
+	        Also decrement id count for unused sentences.
+	        Args:
+	            sentences (list<list<int>>): the list of sentences for the current line
+	            fromEnd (bool): Define the question on the answer
+	        Return:
+	            list<int>: the list of the word ids of the sentence
+	        """
+	        # We add sentence by sentence until we reach the maximum length
+	        merged = []
+	        #print(sentences)
+	        # If question: we only keep the last sentences
+	        # If answer: we only keep the first sentences
+	        if fromEnd:
+	            sentences = reversed(sentences)
+
+	        for sentence in sentences:
+	            #print(sentence)
+	            try:
+	            	#print(sentence,len(sentence))
+	            	t=len(sentence)
+	            except:
+	           		continue
+	            # If the total length is not too big, we still can add one more sentence
+	            if len(merged) + len(sentence) <= self.args.maxLength:
+	                if fromEnd:  # Append the sentence
+	                    merged = sentence + merged
+	                else:
+	                    merged = merged + sentence
+
+	        return merged
+
+
+        # 1st step: Iterate over all words and add filters the sentences
+        # according to the sentence lengths
+        for inputWords, targetWords in tqdm(self.trainingSamples2, desc='Filter sentences:', leave=False):
+            inputWords = mergeSentences(inputWords, fromEnd=True)
+            targetWords = mergeSentences(targetWords, fromEnd=False)
+
+            newSamples.append([inputWords, targetWords])
+        words = []
+
+        # WARNING: DO NOT FILTER THE UNKNOWN TOKEN !!! Only word which has count==0 ?
+
+        # 2nd step: filter the unused words and replace them by the unknown token
+        # This is also where we update the correnspondance dictionaries
+        specialTokens = {  # TODO: bad HACK to filter the special tokens. Error prone if one day add new special tokens
+            self.padToken,
+            self.goToken,
+            self.eosToken,
+            self.unknownToken
+        }
+        newMapping = {}  # Map the full words ids to the new one (TODO: Should be a list)
+        newId = 0
+
+
+        # Last step: replace old ids by new ones and filters empty sentences
+        def replace_words(words):
+            valid = False  # Filter empty sequences
+
+            counter=0
+            dou = self.word2id[u'，']
+            ju2 = self.word2id[u'。']
+            kong = self.word2id[u'　']
+            ying = self.word2id[u'“']
+            ying2 = self.word2id[u'”']
+            for i, w in enumerate(words):
+                if (words[i] != self.unknownToken ) and (words[i] != dou)  and (words[i] != ju2 ) and (words[i] != kong)  \
+                 and (words[i] != ying) and (words[i] != ying2) :  # Also filter if only contains unknown tokens
+                    #valid = True
+                    counter +=1
+
+            if(counter >=2 ):
+                valid = True
+            '''
+                print(' valid!:')
+            else:
+                print(' Not valid!:')
+                s=''
+                for i in range(0,len(words)):
+                   s += ' '+self.id2word[words[i]]
+                print(s)
+            '''
+            return valid
+
+        self.trainingSamples.clear()
+        print('befor append : len(self.trainingSamples):',len(self.trainingSamples))
+        print('befor append : len(self.newSamples):',len(newSamples))
+        counter2 = 0
+        for inputWords, targetWords in tqdm(newSamples, desc='Replace ids:', leave=False):
+            valid = True
+            valid &= replace_words(inputWords)
+            valid &= replace_words(targetWords)
+            valid &= targetWords.count(self.unknownToken) == 0  # Filter target with out-of-vocabulary target words ?
+
+            if valid:
+                self.trainingSamples.append([inputWords, targetWords])  # TODO: Could replace list by tuple
+                counter2 +=1
+        print('valid counter2 :',counter2)
+        print('len(self.trainingSamples):',len(self.trainingSamples))
+
+
+        print('Randomly play samples:')
+        for i in range( 0,  100 ):
+            idSample = i #random.randint(0, len(self.trainingSamples2) - 1)
+            #print(i)
+            #print(type(self.trainingSamples[idSample][0]))
+            print('Q: {}'.format(self.sequence2str(self.trainingSamples[idSample][0], clean=True)))
+            print('A: {}'.format(self.sequence2str(self.trainingSamples[idSample][1], clean=True)))
+            print()
+
+
+        self.idCount.clear()  # Not usefull anymore. Free data
+
+
     def filterFromFull(self):
         """ Load the pre-processed full corpus and filter the vocabulary / sentences
         to match the given model options
         """
 
         def mergeSentences(sentences, fromEnd=False):
-            """Merge the sentences until the max sentence length is reached
-            Also decrement id count for unused sentences.
-            Args:
-                sentences (list<list<int>>): the list of sentences for the current line
-                fromEnd (bool): Define the question on the answer
-            Return:
-                list<int>: the list of the word ids of the sentence
-            """
-            # We add sentence by sentence until we reach the maximum length
-            merged = []
-            #print(sentences)
-            # If question: we only keep the last sentences
-            # If answer: we only keep the first sentences
-            if fromEnd:
-                sentences = reversed(sentences)
+	        """Merge the sentences until the max sentence length is reached
+	        Also decrement id count for unused sentences.
+	        Args:
+	            sentences (list<list<int>>): the list of sentences for the current line
+	            fromEnd (bool): Define the question on the answer
+	        Return:
+	            list<int>: the list of the word ids of the sentence
+	        """
+	        # We add sentence by sentence until we reach the maximum length
+	        merged = []
+	        #print(sentences)
+	        # If question: we only keep the last sentences
+	        # If answer: we only keep the first sentences
+	        if fromEnd:
+	            sentences = reversed(sentences)
 
-            for sentence in sentences:
+	        for sentence in sentences:
+	            #print(sentence)
 
-                # If the total length is not too big, we still can add one more sentence
-                if len(merged) + len(sentence) <= self.args.maxLength:
-                    if fromEnd:  # Append the sentence
-                        merged = sentence + merged
-                    else:
-                        merged = merged + sentence
-                else:  # If the sentence is not used, neither are the words
-                    for w in sentence:
-                        self.idCount[w] -= 1
-            return merged
+	            # If the total length is not too big, we still can add one more sentence
+	            if len(merged) + len(sentence) <= self.args.maxLength:
+	                if fromEnd:  # Append the sentence
+	                    merged = sentence + merged
+	                else:
+	                    merged = merged + sentence
+	            else:  # If the sentence is not used, neither are the words
+	                for w in sentence:
+	                    self.idCount[w] -= 1
+
+	        return merged
+
 
         newSamples = []
 
@@ -408,25 +551,31 @@ class TextData:
         # Last step: replace old ids by new ones and filters empty sentences
         def replace_words(words):
             valid = False  # Filter empty sequences
+            '''
+            print('---------')
+            s=''
+            for i in range(0,len(words)):
+                s += self.id2word[words[i]]
+            print(s)
+            '''
             counter=0
             dou = self.word2id[u'，']
             ju2 = self.word2id[u'。']
-            kong = self.word2id[u'　']
-             
-            
+            #kong = self.word2id[u'　']
+
             for i, w in enumerate(words):
                 words[i] = newMapping[w]
-                if (words[i] != self.unknownToken )and (words[i] != dou)  and (words[i] != ju2 ) and (words[i] != kong)  :  # Also filter if only contains unknown tokens
+                if (words[i] != self.unknownToken )and (words[i] != dou)  and (words[i] != ju2 ) :# and (words[i] != kong)  :  # Also filter if only contains unknown tokens
                     #valid = True
                     counter +=1
-                    
+
             if(counter >=2 ):
                 valid = True
             '''
                 print(' valid!:')
             else:
                 print(' Not valid!:')
-                
+
             s=''
             for i in range(0,len(words)):
                 s += self.id2word[words[i]]
@@ -441,32 +590,32 @@ class TextData:
             valid &= replace_words(inputWords)
             valid &= replace_words(targetWords)
             valid &= targetWords.count(self.unknownToken) == 0  # Filter target with out-of-vocabulary target words ?
-            
+
             if valid:
                 self.trainingSamples.append([inputWords, targetWords])  # TODO: Could replace list by tuple
                 counter2 +=1
         print('valid counter2 :',counter2)
         self.idCount.clear()  # Not usefull anymore. Free data
 
-    def createFullCorpus(self, conversations):
+    def createFullCorpus(self, conversations,create=True):
         """Extract all data from the given vocabulary.
         Save the data on disk. Note that the entire corpus is pre-processed
         without restriction on the sentence length or vocab size.
         """
         # Add standard tokens
-        self.padToken = self.getWordId('<pad>')  # Padding (Warning: first things to add > id=0 !!)
-        self.goToken = self.getWordId('<go>')  # Start of sequence
-        self.eosToken = self.getWordId('<eos>')  # End of sequence
-        self.unknownToken = self.getWordId('<unknown>')  # Word dropped from vocabulary
+        self.padToken = self.getWordId('<pad>',create)  # Padding (Warning: first things to add > id=0 !!)
+        self.goToken = self.getWordId('<go>',create)  # Start of sequence
+        self.eosToken = self.getWordId('<eos>',create)  # End of sequence
+        self.unknownToken = self.getWordId('<unknown>',create)  # Word dropped from vocabulary
 
         # Preprocessing data
 
         for conversation in tqdm(conversations, desc='Extract conversations'):
-            self.extractConversation(conversation)
+            self.extractConversation(conversation,create)
 
         # The dataset will be saved in the same order it has been extracted
 
-    def extractConversation(self, conversation):
+    def extractConversation(self, conversation,create):
         """Extract the sample lines from the conversations
         Args:
             conversation (Obj): a conversation object containing the lines to extract
@@ -476,7 +625,7 @@ class TextData:
             step = 2
         else:
             step = 1
-            
+
         #print("len(conversation['lines'])",len(conversation['lines']))
         # Iterate over all the lines of the conversation
         for i in tqdm_wrap(
@@ -487,13 +636,21 @@ class TextData:
             inputLine  = conversation['lines'][i]
             targetLine = conversation['lines'][i+1]
 
-            inputWords  = self.extractText(inputLine['text'])
-            targetWords = self.extractText(targetLine['text'])
+            #print(inputLine)
+            #print(targetLine)
 
-            if inputWords and targetWords:  # Filter wrong samples (if one of the list is empty)
-                self.trainingSamples.append([inputWords, targetWords])
+            inputWords  = self.extractText(inputLine['text'],create)
+            targetWords = self.extractText(targetLine['text'],create)
+            #print(inputWords)
 
-    def extractText(self, line):
+            if(create):
+	            if inputWords and targetWords:  # Filter wrong samples (if one of the list is empty)
+	                self.trainingSamples.append([inputWords, targetWords])
+            else:
+	            if inputWords and targetWords:  # Filter wrong samples (if one of the list is empty)
+	                self.trainingSamples2.append([inputWords, targetWords])
+
+    def extractText(self, line ,create):
         """Extract the words from a sample lines
         Args:
             line (str): a line containing the text to extract
@@ -514,25 +671,25 @@ class TextData:
                 tempWords.append(self.getWordId(token))  # Create the vocabulary and the training sentences
 
             sentences.append(tempWords)
-        
+
         '''
         words = line.split(' ')
         #print('line',words)
         tempWords = []
         dou = u"，" #.encode('GBK')
         feng = u"；"#.encode('GBK')
-        ju = u"。"#.encode('GBK') 
+        ju = u"。"#.encode('GBK')
         for i in range(0,len(words)):
             if words[i]==dou or words[i]==feng or words[i]==ju :
+                sentences.append(tempWords)
                 tempWords = []
-                sentences.append(tempWords)    
                 #print('new-----------------------------------')
-            
-            tempWords.append(self.getWordId(words[i]))  # Create the vocabulary and the training sentences
-        sentences.append(tempWords)    
-        #print(sentences)      
-        
-        #print('2',sentences,words)   
+
+            tempWords.append(self.getWordId(words[i],create))  # Create the vocabulary and the training sentences
+        sentences.append(tempWords)
+        #print(sentences)
+
+        #print('2',sentences,words)
         return sentences
 
     def getWordId(self, word, create=True):
@@ -594,6 +751,7 @@ class TextData:
 
         sentence = []
         for wordId in sequence:
+            #print(wordId)
             if wordId == self.eosToken:  # End of generated sentence
                 break
             elif wordId != self.padToken and wordId != self.goToken:
@@ -644,7 +802,7 @@ class TextData:
         '''
         # First step: Divide the sentence in token
         tokens = nltk.word_tokenize(sentence)
-        
+
         if len(tokens) > self.args.maxLength:
             return None
 
@@ -654,7 +812,7 @@ class TextData:
             wordIds.append(self.getWordId(token, create=False))  # Create the vocabulary and the training sentences
         '''
         tokens = sentence.split(' ')
-        
+
         if len(tokens) > self.args.maxLength:
             return None
 
@@ -662,8 +820,8 @@ class TextData:
         wordIds = []
         for token in tokens:
             wordIds.append(self.getWordId(token, create=False))  # Create the vocabulary and the training sentences
-            
-        #print('1',sentence,tokens) 
+
+        #print('1',sentence,tokens)
         # Third step: creating the batch (add padding, reverse)
         batch = self._createBatch([[wordIds, []]])  # Mono batch, no target output
 
