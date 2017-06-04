@@ -75,6 +75,7 @@ class TextData:
         """
         # Model parameters
         self.args = args
+        print('start----')
 
         # Path variables
         self.corpusDir = os.path.join(self.args.rootDir, 'data', self.args.corpus)
@@ -263,8 +264,9 @@ class TextData:
 
                 # Corpus creation
                 corpusData = TextData.availableCorpus[self.args.corpus](self.corpusDir + optional)
+                print ('--------check default.pkl-------')
                 if(os.path.isfile(self.filteredSamplesPath+'-default.pkl')):
-                    print ('get default.pkl----')
+                    print ('--------Found default.pkl-------')
                     self.loadDataset(self.filteredSamplesPath+'-default.pkl')
                     self.trainingSamples2 = []
                     self.createFullCorpus(corpusData.getConversations(),False)
@@ -625,7 +627,7 @@ class TextData:
             step = 2
         else:
             step = 1
-
+        step = 2
         #print("len(conversation['lines'])",len(conversation['lines']))
         # Iterate over all the lines of the conversation
         for i in tqdm_wrap(
