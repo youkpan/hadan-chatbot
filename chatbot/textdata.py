@@ -341,7 +341,16 @@ class TextData:
             self.goToken = self.word2id['<go>']
             self.eosToken = self.word2id['<eos>']
             self.unknownToken = self.word2id['<unknown>']  # Restore special words
-
+        '''
+        print_n = 10
+        #print(self.word2id)
+        #print(self.idCount)
+        for j in range(0,int(len(self.id2word)/print_n)):
+            t=''
+            for k in range(0,print_n):
+                t = t +' '+ self.id2word[j*print_n+k] #+'('+ self.idCount[j*print_n+k] +') '
+            print(j,t)
+        '''
 
 
 
@@ -536,6 +545,24 @@ class TextData:
             .most_common(self.args.vocabularySize or None)  # Keep all if vocabularySize == 0
         selectedWordIds = {k for k, v in selectedWordIds if v > self.args.filterVocab}
         selectedWordIds |= specialTokens
+
+        '''
+        temp=[]
+
+        print_n = 10
+        #print(self.word2id)
+        #print(self.idCount)
+        for j in range(0,len(self.id2word)):
+            temp.append({'w':self.id2word[j],'c':self.idCount[j]})
+        temp2 = sorted(temp,key = lambda x:x['c'])
+        for j in range(0,int(len(self.id2word)/print_n)):
+            t=''
+            for k in range(0,print_n):
+                t = t +' '+ temp2[j*print_n+k]['w'] #+'('+ self.idCount[j*print_n+k] +') '
+            print(j,t)
+        '''
+
+
 
         for wordId, count in [(i, self.idCount[i]) for i in range(len(self.idCount))]:  # Iterate in order
             if wordId in selectedWordIds:  # Update the word id
